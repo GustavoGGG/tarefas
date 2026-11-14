@@ -1,0 +1,11 @@
+{
+	"name": "tarefas",
+	"description": "Gestor Tarefas",
+	"version": "1.0.0",
+	"homepage": "",
+	"mainsrc": "./src",
+	"projects": [],
+	"dependencies": {
+		"github.com/HashLoad/horse": "^3.3.16"
+	}
+}

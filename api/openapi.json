@@ -1,0 +1,184 @@
+﻿{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "API de Tarefas",
+    "description": "API REST para gerenciar tarefas. Todas as rotas /api exigem o header X-API-Key (use o botão Authorize).",
+    "version": "1.0.0"
+  },
+  "servers": [ { "url": "/" } ],
+  "tags": [ { "name": "Tarefas", "description": "Operações sobre tarefas" } ],
+  "security": [ { "ApiKeyAuth": [] } ],
+  "paths": {
+    "/api/tarefas": {
+      "get": {
+        "tags": ["Tarefas"],
+        "summary": "Lista tarefas com paginação",
+        "parameters": [
+          { "name": "limit", "in": "query", "description": "Itens por página. Valores fora da faixa não são rejeitados: abaixo de 1 vira 1 e acima do teto vira o teto (padrão 100, configurável no config.json)", "schema": { "type": "integer", "default": 10 } },
+          { "name": "offset", "in": "query", "description": "Itens a ignorar. Valores negativos viram 0", "schema": { "type": "integer", "default": 0 } }
+        ],
+        "responses": {
+          "200": { "description": "Lista de tarefas", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ListaTarefasResponse" } } } },
+          "401": { "$ref": "#/components/responses/NaoAutorizado" },
+          "500": { "$ref": "#/components/responses/ErroInterno" }
+        }
+      },
+      "post": {
+        "tags": ["Tarefas"],
+        "summary": "Cria uma tarefa",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CriarTarefaRequest" } } }
+        },
+        "responses": {
+          "201": { "description": "Tarefa criada", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TarefaResponse" } } } },
+          "400": { "$ref": "#/components/responses/RequisicaoInvalida" },
+          "401": { "$ref": "#/components/responses/NaoAutorizado" },
+          "500": { "$ref": "#/components/responses/ErroInterno" }
+        }
+      }
+    },
+    "/api/tarefas/{id}": {
+      "parameters": [
+        { "name": "id", "in": "path", "required": true, "description": "Identificador da tarefa", "schema": { "type": "integer", "minimum": 1 } }
+      ],
+      "get": {
+        "tags": ["Tarefas"],
+        "summary": "Busca uma tarefa pelo id",
+        "responses": {
+          "200": { "description": "Tarefa encontrada", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TarefaResponse" } } } },
+          "400": { "$ref": "#/components/responses/RequisicaoInvalida" },
+          "401": { "$ref": "#/components/responses/NaoAutorizado" },
+          "404": { "$ref": "#/components/responses/NaoEncontrada" },
+          "500": { "$ref": "#/components/responses/ErroInterno" }
+        }
+      },
+      "put": {
+        "tags": ["Tarefas"],
+        "summary": "Atualiza o status da tarefa",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AtualizarStatusRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "Tarefa atualizada", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TarefaResponse" } } } },
+          "400": { "$ref": "#/components/responses/RequisicaoInvalida" },
+          "401": { "$ref": "#/components/responses/NaoAutorizado" },
+          "404": { "$ref": "#/components/responses/NaoEncontrada" },
+          "500": { "$ref": "#/components/responses/ErroInterno" }
+        }
+      },
+      "delete": {
+        "tags": ["Tarefas"],
+        "summary": "Remove a tarefa",
+        "responses": {
+          "204": { "description": "Tarefa removida (sem corpo)" },
+          "400": { "$ref": "#/components/responses/RequisicaoInvalida" },
+          "401": { "$ref": "#/components/responses/NaoAutorizado" },
+          "404": { "$ref": "#/components/responses/NaoEncontrada" },
+          "500": { "$ref": "#/components/responses/ErroInterno" }
+        }
+      }
+    },
+    "/api/tarefas/stats/resumo": {
+      "get": {
+        "tags": ["Tarefas"],
+        "summary": "Estatísticas das tarefas",
+        "responses": {
+          "200": { "description": "Resumo", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/StatsResponse" } } } },
+          "401": { "$ref": "#/components/responses/NaoAutorizado" },
+          "500": { "$ref": "#/components/responses/ErroInterno" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "ApiKeyAuth": { "type": "apiKey", "in": "header", "name": "X-API-Key" }
+    },
+    "schemas": {
+      "Tarefa": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "example": 1 },
+          "titulo": { "type": "string", "example": "Estudar Delphi" },
+          "descricao": { "type": "string", "example": "Clean Architecture" },
+          "prioridade": { "type": "integer", "minimum": 1, "maximum": 3, "example": 3 },
+          "status": { "type": "string", "enum": ["Pendente", "Em Progresso", "Concluída"] },
+          "dataCriacao": { "type": "string", "description": "yyyy-mm-dd hh:nn:ss", "example": "2030-01-10 14:30:00" },
+          "dataFinalizacao": { "type": "string", "description": "yyyy-mm-dd hh:nn:ss; vazio = ainda não finalizada", "example": "" },
+          "dataPrevisaoFinalizacao": { "type": "string", "description": "yyyy-mm-dd hh:nn:ss; vazio = sem previsão", "example": "2030-01-15 00:00:00" },
+          "responsavel": { "type": "string", "example": "Ana" }
+        }
+      },
+      "CriarTarefaRequest": {
+        "type": "object",
+        "required": ["titulo", "responsavel"],
+        "properties": {
+          "titulo": { "type": "string", "maxLength": 100, "example": "Estudar Delphi" },
+          "descricao": { "type": "string", "maxLength": 500, "example": "Clean Architecture" },
+          "prioridade": { "type": "integer", "minimum": 1, "maximum": 3, "default": 1, "example": 3 },
+          "responsavel": { "type": "string", "maxLength": 100, "example": "Ana" },
+          "dataPrevisaoFinalizacao": { "type": "string", "description": "Opcional. yyyy-mm-dd ou yyyy-mm-dd hh:nn:ss", "example": "2030-01-15" }
+        }
+      },
+      "AtualizarStatusRequest": {
+        "type": "object",
+        "required": ["status"],
+        "properties": {
+          "status": { "type": "string", "enum": ["Pendente", "Em Progresso", "Concluída"] }
+        }
+      },
+      "TarefaResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "$ref": "#/components/schemas/Tarefa" },
+          "success": { "type": "boolean", "example": true },
+          "statusCode": { "type": "integer", "example": 200 }
+        }
+      },
+      "ListaTarefasResponse": {
+        "type": "object",
+        "properties": {
+          "items": { "type": "array", "items": { "$ref": "#/components/schemas/Tarefa" } },
+          "success": { "type": "boolean", "example": true },
+          "statusCode": { "type": "integer", "example": 200 },
+          "total": { "type": "integer" },
+          "limit": { "type": "integer" },
+          "offset": { "type": "integer" }
+        }
+      },
+      "Stats": {
+        "type": "object",
+        "properties": {
+          "total": { "type": "integer" },
+          "mediaPrioridade": { "type": "number", "format": "double" },
+          "concluidasUltimos7Dias": { "type": "integer" }
+        }
+      },
+      "StatsResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "$ref": "#/components/schemas/Stats" },
+          "success": { "type": "boolean", "example": true },
+          "statusCode": { "type": "integer", "example": 200 }
+        }
+      },
+      "Erro": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": false },
+          "statusCode": { "type": "integer" },
+          "error": { "type": "string" },
+          "code": { "type": "string" }
+        }
+      }
+    },
+    "responses": {
+      "RequisicaoInvalida": { "description": "Dados inválidos (ID_INVALIDO, JSON_INVALIDO ou validação)", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Erro" } } } },
+      "NaoAutorizado": { "description": "API Key ausente ou inválida (API_KEY_AUSENTE, API_KEY_INVALIDA)", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Erro" } } } },
+      "NaoEncontrada": { "description": "Tarefa não encontrada", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Erro" } } } },
+      "ErroInterno": { "description": "Erro interno do servidor", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Erro" } } } }
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "database": {
+    "file": "database/tarefas.db"
+  },
+  "api": {
+    "port": 9000,
+    "host": "0.0.0.0",
+    "apiKey": "TROQUE_ESTA_CHAVE",
+    "environment": "development"
+  },
+  "pagination": {
+    "defaultLimit": 10,
+    "maxLimit": 100
+  }
+}
