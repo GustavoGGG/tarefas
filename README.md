@@ -1,4 +1,8 @@
-﻿# Tarefas
+﻿<p align="center">
+  <img src="assets/logo.svg" alt="Tarefas" width="360">
+</p>
+
+# Tarefas
 
 Sistema de gerenciamento de tarefas em Delphi 13, composto por uma **API REST** e um **cliente VCL** que a consome.
 
@@ -14,7 +18,6 @@ Sistema de gerenciamento de tarefas em Delphi 13, composto por uma **API REST** 
 - [API](#api)
 - [Cliente VCL](#cliente-vcl)
 - [Testes](#testes)
-- [Estrutura do repositório](#estrutura-do-repositório)
 
 ## Visão geral
 
@@ -117,18 +120,21 @@ Arquivo `config.json`, na raiz do projeto:
 
 ### Endpoints
 
-Todas as rotas exigem o header `X-API-Key`; sem ele a API responde 401 (`API_KEY_AUSENTE` ou `API_KEY_INVALIDA`).
+> 🔐 Todas as rotas exigem o header `X-API-Key`; sem ele a API responde **401** (`API_KEY_AUSENTE` ou `API_KEY_INVALIDA`).
 
-| Método | Rota | Descrição |
-| --- | --- | --- |
-| GET | `/api/tarefas` | Lista com `limit` e `offset` |
-| GET | `/api/tarefas/:id` | Busca uma tarefa |
-| POST | `/api/tarefas` | Cria; corpo `titulo`, `responsavel` (obrigatório, até 100), `descricao`, `prioridade` (1 = Baixa, 2 = Média, 3 = Alta) e `dataPrevisaoFinalizacao` (opcional, `yyyy-mm-dd` ou `yyyy-mm-dd hh:nn:ss`; formato inválido retorna 400 `DATA_PREVISAO_INVALIDA`) |
-| PUT | `/api/tarefas/:id` | Atualiza o status: `Pendente`, `Em Progresso` ou `Concluída` |
-| DELETE | `/api/tarefas/:id` | Remove |
-| GET | `/api/tarefas/stats/resumo` | Total, média de prioridade e concluídas nos últimos 7 dias |
+| Método | Rota | Descrição | Sucesso |
+| :---: | --- | --- | :---: |
+| 🟢 `GET` | `/api/tarefas` | Lista tarefas (query `limit` e `offset`) | `200` |
+| 🟢 `GET` | `/api/tarefas/:id` | Busca uma tarefa | `200` |
+| 🔵 `POST` | `/api/tarefas` | Cria uma tarefa | `201` |
+| 🟠 `PUT` | `/api/tarefas/:id` | Atualiza o status da tarefa | `200` |
+| 🔴 `DELETE` | `/api/tarefas/:id` | Remove a tarefa | `204` |
+| 🟢 `GET` | `/api/tarefas/stats/resumo` | Total, média de prioridade e concluídas nos últimos 7 dias | `200` |
 
-Exemplo:
+#### Exemplos
+
+<details>
+<summary>🔵 <code>POST /api/tarefas</code> — criar tarefa</summary>
 
 ```sh
 curl -X POST http://localhost:9000/api/tarefas \
@@ -137,11 +143,63 @@ curl -X POST http://localhost:9000/api/tarefas \
   -d '{"titulo":"Estudar Delphi","descricao":"Clean Architecture","prioridade":3,"responsavel":"Ana","dataPrevisaoFinalizacao":"2030-01-15"}'
 ```
 
+</details>
+
+<details>
+<summary>🟢 <code>GET /api/tarefas</code> — listar com paginação</summary>
+
+```sh
+curl "http://localhost:9000/api/tarefas?limit=10&offset=0" \
+  -H "X-API-Key: SUA_CHAVE"
+```
+
+</details>
+
+<details>
+<summary>🟠 <code>PUT /api/tarefas/:id</code> — concluir tarefa</summary>
+
+```sh
+curl -X PUT http://localhost:9000/api/tarefas/1 \
+  -H "X-API-Key: SUA_CHAVE" \
+  -H "Content-Type: application/json" \
+  -d '{"status":"Concluída"}'
+```
+
+</details>
+
+<details>
+<summary>🔴 <code>DELETE /api/tarefas/:id</code> — remover tarefa</summary>
+
+```sh
+curl -X DELETE http://localhost:9000/api/tarefas/1 \
+  -H "X-API-Key: SUA_CHAVE"
+```
+
+</details>
+
 ### Comportamento
 
 - Erros inesperados do servidor retornam 500 com a mensagem genérica "Erro interno do servidor"; o detalhe vai só para o console da API.
 - Uma `prioridade` presente mas não inteira (texto, `null`, `2.5`) retorna 400 `PRIORIDADE_INVALIDA`; só a chave ausente assume 1.
 - Repetir `PUT` com `Concluída` numa tarefa já concluída mantém a data de finalização original.
+
+### Estrutura de dados
+
+As tarefas ficam em uma única tabela `Tarefas` de um banco **SQLite** (`database/tarefas.db`), acessada via FireDAC pela camada de infraestrutura (`Infra.Connection` cria o schema e `Infra.Repository` lê e grava). Em memória, cada linha é representada pela entidade `TTarefa` (`Domain.Entities`).
+
+| Coluna | Tipo SQLite | Restrições | Descrição |
+| --- | --- | --- | --- |
+| `Id` | `INTEGER` | PK, `AUTOINCREMENT` | Identificador gerado pelo banco |
+| `Titulo` | `TEXT` | `NOT NULL` | Título da tarefa |
+| `Descricao` | `TEXT` | opcional | Descrição detalhada |
+| `Prioridade` | `INTEGER` | `NOT NULL`, padrão `1` | `1` = Baixa, `2` = Média, `3` = Alta |
+| `Status` | `TEXT` | `NOT NULL`, padrão `'Pendente'` | `Pendente`, `Em Progresso` ou `Concluída` |
+| `DataCriacao` | `DATETIME` | `NOT NULL` | Preenchida pela API ao criar a tarefa |
+| `DataFinalizacao` | `DATETIME` | opcional | Preenchida ao concluir; volta a `NULL` ao reabrir |
+| `DataPrevisaoFinalizacao` | `DATETIME` | opcional | Previsão informada pelo usuário |
+| `Responsavel` | `TEXT` | `NOT NULL` | Quem responde pela tarefa (até 100 caracteres, validado pela API) |
+
+O `Status` e a `Prioridade` são validados no domínio antes de gravar, e `DataFinalizacao` só tem valor quando o status é `Concluída`.
 
 ### Swagger / OpenAPI
 
@@ -191,22 +249,3 @@ Os testes usam DUnitX e são executados pelo IDE.
 O projeto `api/tests/Tarefas.API.Tests.dproj` cobre domínio, serviços, validadores e `TResult`, com fake de repositório. Os testes de controller são HTTP: exigem a API rodando (`http://localhost:9000` ou a variável `TAREFAS_API_URL`); sem servidor, terminam como PULADO.
 
 Para detectar vazamentos de memória, o projeto ativa `ReportMemoryLeaksOnShutdown`: feche a API ou o runner normalmente para ver o relatório.
-
-## Estrutura do repositório
-
-| Caminho | Conteúdo |
-| --- | --- |
-| `api/src/Shared` | Resultado (`TResult`, sem status HTTP) e exceções |
-| `api/src/Domain` | Entidades, value objects e interfaces de repositório |
-| `api/src/Application` | Serviços, DTOs (requisições e respostas em records) e validadores |
-| `api/src/Infrastructure` | Conexão SQLite/FireDAC (pool) e repositório |
-| `api/src/API` | Controllers, rotas, middlewares, validador de API Key e formatador de respostas |
-| `api/src/Startup` | Configuração, composição das dependências (serviço, repositório, validador) e inicialização |
-| `api/openapi.json` | Especificação OpenAPI servida em `/openapi.json` |
-| `api/tests` | Testes DUnitX da API |
-| `app/` | Cliente VCL (`Tarefas.App.dproj`) |
-| `database/` | Arquivo SQLite criado pela API ao iniciar (`tarefas.db`), ignorado pelo Git |
-| `modules/` | Dependências do Boss (Horse), ignorado pelo Git |
-| `config.json` | Porta, host, API Key, caminho do banco e paginação. Contém a chave, por isso é ignorado pelo Git |
-| `config.example.json` | Modelo do `config.json`, sem chave real |
-| `boss.json` | Dependências (Horse `^3.3.16`) |

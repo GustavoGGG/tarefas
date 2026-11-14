@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="140" viewBox="0 0 480 140" role="img" aria-label="Tarefas">
+  <rect x="10" y="10" width="120" height="120" rx="28" fill="#2563EB"/>
+  <path d="M38 48h16M38 70h16M38 92h16" stroke="#BFDBFE" stroke-width="7" stroke-linecap="round"/>
+  <path d="M66 48h38M66 70h38M66 92h24" stroke="#fff" stroke-width="7" stroke-linecap="round" opacity=".55"/>
+  <circle cx="104" cy="92" r="22" fill="#22C55E" stroke="#2563EB" stroke-width="6"/>
+  <path d="M94 92l7 7 12-14" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <text x="152" y="84" font-family="'Segoe UI',Helvetica,Arial,sans-serif" font-size="60" font-weight="700" fill="#0F172A">Tarefas</text>
+  <text x="154" y="112" font-family="'Segoe UI',Helvetica,Arial,sans-serif" font-size="20" letter-spacing="3" fill="#2563EB">API · DELPHI</text>
+</svg>
