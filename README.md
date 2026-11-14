@@ -70,7 +70,9 @@ flowchart TD
 - **Delphi 13 (RAD Studio)** para compilar e executar os projetos. O FireDAC já inclui o driver SQLite.
 - **[Boss](https://github.com/HashLoad/boss)** para baixar o Horse em `modules/` (somente a API).
 
-A API cria o banco SQLite e a tabela `Tarefas` ao iniciar; não há passo de preparação do banco. A coluna `Responsavel` é `NOT NULL`: um `database/tarefas.db` criado por uma versão anterior mantém o schema antigo e deve ser apagado para ser recriado.
+Não é preciso preparar o banco: ao iniciar, a API cria o arquivo SQLite (`database/tarefas.db`) e a tabela `Tarefas` caso ainda não existam.
+
+> Se você já tem um `database/tarefas.db` de uma versão anterior do projeto, apague-o para que seja recriado com o schema atual (a coluna `Responsavel` passou a ser obrigatória).
 
 ## Como executar
 
